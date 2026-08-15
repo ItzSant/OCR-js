@@ -247,12 +247,17 @@ function extraerVoucherBcp(texto) {
 
   if (indiceImporte !== -1) {
     const valor = lineas[indiceImporte].match(
-      /(?:S\s*\/|\$\s*\/)\s*[^0-9A-Za-z*]*([0-9A-Za-z*]*?)(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})/i
+      // El grupo de mascara ahora tambien admite espacios/tabs intercalados:
+      // el OCR a veces lee el importe como si fueran celdas de tabla
+      // separadas (ej. "S/***" + tab + "**16,648.97").
+      /(?:S\s*\/|\$\s*\/)\s*[^0-9A-Za-z*]*((?:[0-9A-Za-z*]|\s)*?)\s*(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})/i
     );
     if (valor) {
-      // Todo caracter no numerico entre el simbolo monetario y la cifra
-      // visible es una mascara probable (ej. "x****" -> "*****").
-      const mascara = valor[1].replace(/[^0-9]/g, "*");
+      // Quitamos espacios/tabs del grupo ANTES de convertir a asteriscos,
+      // para no confundir un separador de tabla con un digito enmascarado.
+      // Todo caracter no numerico restante entre el simbolo monetario y la
+      // cifra visible es una mascara probable (ej. "x****" -> "*****").
+      const mascara = valor[1].replace(/\s+/g, "").replace(/[^0-9]/g, "*");
       let importe = (mascara + valor[2]).replace(/\s+/g, "");
 
       // Ceros inmediatamente antes de una zona enmascarada suelen ser
